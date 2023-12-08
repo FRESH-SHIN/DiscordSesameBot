@@ -46,7 +46,7 @@ class SesameHandler:
         await self.device.connect()
         await self.device.wait_for_login()
     async def unlock(self):
-        logging.debug("openning")
+        logging.debug("opening")
         if self.device is None:
             await self.connect()
         await self.device.unlock(history_tag="My Script")
