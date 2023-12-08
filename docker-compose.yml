@@ -1,0 +1,19 @@
+version: '3.6'
+services:
+  app:
+    build:
+      context: ./nlabosesamebot
+    container_name: nlabosesamebot
+    environment:
+      PUBLIC_KEY: ${PUBLIC_KEY}
+      SECRET_KEY: ${SECRET_KEY}
+      BLE_MAC: ${BLE_MAC}
+      BLE_UUID: ${BLE_UUID}
+      DISCORD_CHANNEL: ${DISCORD_CHANNEL}
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_GUILD: ${DISCORD_GUILD}
+    privileged: true
+    restart: always
+    volumes:
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
+    entrypoint: ["python3", "."]

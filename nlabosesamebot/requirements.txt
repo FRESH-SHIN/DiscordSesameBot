@@ -1,0 +1,2 @@
+pysesameos2
+discord.py
