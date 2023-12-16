@@ -14,7 +14,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: docker compose down
-      run: docker compose down    
+      run: docker compose down 
+      continue-on-error: true
     - name: Remove the Docker image
       run: docker image rm nlabosesamebot-app:latest
     - name: Build the Docker image
