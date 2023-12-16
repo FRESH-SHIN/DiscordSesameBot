@@ -16,4 +16,4 @@ services:
     restart: always
     volumes:
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro
-    entrypoint: ["python3", "."]
+    entrypoint: ["python3", "nlabosesamebot"]
