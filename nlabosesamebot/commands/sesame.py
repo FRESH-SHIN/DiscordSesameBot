@@ -103,9 +103,10 @@ async def init(interaction: discord.Interaction, mode : str):
 @tree.command(name="debug", description="Debug on/off")
 @app_commands.checks.has_role("ラボメン")
 @app_commands.describe(mode='on or off')
-async def init(interaction: discord.Interaction, mode : str):
+async def toggle_debug(interaction: discord.Interaction, mode : str):
     global debug_mode
     if mode.lower() == "on":
         debug_mode = True
-    else:
+    elif mode.lower() == "off":
         debug_mode = False
+    await appendMessageToInteraction(latest_interaction, f'Debug mode :{str(debug_mode)}')
