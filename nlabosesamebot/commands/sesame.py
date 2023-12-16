@@ -9,6 +9,7 @@ from discord import app_commands, Message, Interaction
 from bot import handler, tree, channel
 
 latest_interaction : Interaction= None
+debug_mode : bool = True
 async def appendMessageToInteraction(interaction : Interaction, text : str):
     interaction_message = await interaction.original_response()
     message = await interaction_message.fetch()
@@ -47,8 +48,9 @@ def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
                 assert isinstance(mech_status, CHSesameBotMechStatus)
             text +=f'\n'+("Motor Status: {}".format(mech_status.getMotorStatus()))
     text +=f'\n'+("=" * 10)
-    event_loop = asyncio.get_event_loop()
-    asyncio.ensure_future(appendMessageToInteraction(latest_interaction, text), loop=event_loop)
+    if debug_mode:
+        event_loop = asyncio.get_event_loop()
+        asyncio.ensure_future(appendMessageToInteraction(latest_interaction, text), loop=event_loop)
     # await channel.send(text)
 
 @tree.command(name="lock", description="Look the door.")
@@ -87,3 +89,23 @@ async def init(interaction: discord.Interaction):
     except Exception as e:
         await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
     
+@tree.command(name="state", description="Get state of the sesame")
+@app_commands.checks.has_role("ラボメン")
+async def init(interaction: discord.Interaction, mode : str):
+    await interaction.response.send_message(f'Attempting to connect to the device...', silent=True)
+    global latest_interaction 
+    latest_interaction = interaction
+    try:
+        await handler.connect()
+    except Exception as e:
+        await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
+
+@tree.command(name="debug", description="Debug on/off")
+@app_commands.checks.has_role("ラボメン")
+@app_commands.describe(mode='on or off')
+async def init(interaction: discord.Interaction, mode : str):
+    global debug_mode
+    if mode.lower() == "on":
+        debug_mode = True
+    else:
+        debug_mode = False

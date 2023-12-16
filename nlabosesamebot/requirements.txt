@@ -1,2 +1,4 @@
 pysesameos2
 discord.py
+
+bleak >= 0.21.0
