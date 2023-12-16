@@ -13,5 +13,11 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+    - name: docker compose down
+      run: docker-compose down    
+    - name: Remove the Docker image
+      run: docker image rm nlabosesamebot-app:latest
     - name: Build the Docker image
-      run: docker build . --file Dockerfile 
+      run: docker compose up -d
+
+    
