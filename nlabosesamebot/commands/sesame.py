@@ -109,4 +109,4 @@ async def toggle_debug(interaction: discord.Interaction, mode : str):
         debug_mode = True
     elif mode.lower() == "off":
         debug_mode = False
-    await appendMessageToInteraction(latest_interaction, f'Debug mode :{str(debug_mode)}')
+    await appendMessageToInteraction(latest_interaction, f'Debug mode: {str(debug_mode)}')

@@ -27,7 +27,7 @@ jobs:
       run: docker compose down 
       continue-on-error: true
     - name: Remove the Docker image
-      run: docker image rm nlabosesamebot-app:latest
+      run: docker image rm discordsesamebot-app:latest
       continue-on-error: true
     - name: Build the Docker image
       run: docker compose up -d
