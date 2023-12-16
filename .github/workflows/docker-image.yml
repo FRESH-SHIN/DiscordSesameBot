@@ -30,6 +30,7 @@ jobs:
       run: docker image rm discordsesamebot-app:latest
       continue-on-error: true
     - name: Build the Docker image
-      run: docker compose up -d
-
+      run: docker compose build --no-cache
+    - name: Run the Docker image
+      run: docker compose run
     
