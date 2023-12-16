@@ -15,4 +15,4 @@ COPY . /usr/src/app
 
 ENTRYPOINT ["python3"]
 
-CMD ["nlabosesamebot"]
+CMD ["."]
