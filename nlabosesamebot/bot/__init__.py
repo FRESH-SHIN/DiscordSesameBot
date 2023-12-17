@@ -30,6 +30,9 @@ class Bot(discord.Client):
 intents = discord.Intents.default()
 client = Bot(intents=intents)
 tree = client.tree
+client.run(os.getenv('DISCORD_TOKEN'))
+channel = client.get_channel(os.getenv('DISCORD_CHANNEL'))
+import commands
 
 handler.initialize(publicKey=os.getenv('PUBLIC_KEY'),
                             secretKey=os.getenv('SECRET_KEY'),
@@ -43,6 +46,4 @@ async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
 
-client.run(os.getenv('DISCORD_TOKEN'))
-channel = client.get_channel(os.getenv('DISCORD_CHANNEL'))
-import commands
+
