@@ -12,7 +12,7 @@ from bot import handler, tree, client
 latest_interaction : Interaction= None
 debug_mode : bool = True
 
-async def send_message_to_channel(msg : str, silent: bool):
+async def send_message_to_channel(msg : str, silent: bool = False):
     channel = client.get_channel(int(os.getenv('DISCORD_CHANNEL')))
     print(msg)
     await channel.send(msg, silent=silent)
@@ -58,6 +58,9 @@ def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
     if debug_mode:
         event_loop = asyncio.get_event_loop()
         asyncio.ensure_future(appendMessageToInteraction(latest_interaction, text), loop=event_loop)
+    else:
+        event_loop = asyncio.get_event_loop()
+        asyncio.ensure_future(send_message_to_channel("Device status: {}".format(device_status), silent=True), loop=event_loop)
     # await channel.send(text)
 
 @tree.command(name="lock", description="Look the door.")
