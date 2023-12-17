@@ -44,13 +44,13 @@ class SesameHandler:
         await self.device.wait_for_login()
     async def unlock(self):
         logging.debug("opening")
-        if self.device is None:
+        if self.device is None or not (self.device.getDeviceStatus() == CHSesame2Status.Unlocked or self.device.getDeviceStatus() == CHSesame2Status.Locked) :
             await self.connect()
-        await self.device.unlock(history_tag="My Script")
+        await self.device.unlock(history_tag="Discord")
 
     async def lock(self):
         logging.debug("closing")
-        if self.device is None:
+        if self.device is None  or not (self.device.getDeviceStatus() == CHSesame2Status.Unlocked or self.device.getDeviceStatus() == CHSesame2Status.Locked) :
             await self.connect()
-        await self.device.lock(history_tag="My Script")
+        await self.device.lock(history_tag="Discord")
     
