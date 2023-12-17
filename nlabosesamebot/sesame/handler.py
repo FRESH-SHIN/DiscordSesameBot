@@ -31,8 +31,7 @@ class SesameHandler:
     async def connect(self):
         scan_duration = 20
         if not self.device is None:
-            if self.device.getDeviceStatus() == CHSesame2Status.NoBleSignal:
-                await self.device.disconnect()
+            await self.device.disconnect()
         self.device = await CHBleManager().scan_by_address(
             ble_device_identifier=self.ble_info, scan_duration=scan_duration
         )
