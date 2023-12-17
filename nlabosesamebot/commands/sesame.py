@@ -1,3 +1,4 @@
+import traceback
 from typing import TYPE_CHECKING, Union
 import asyncio
 from pysesameos2.helper import CHProductModel
@@ -10,6 +11,10 @@ from bot import handler, tree, channel
 
 latest_interaction : Interaction= None
 debug_mode : bool = True
+
+async def send_message_to_channel(msg : str, silent: bool):
+    await channel.send(str, silent=silent)
+
 async def appendMessageToInteraction(interaction : Interaction, text : str):
     interaction_message = await interaction.original_response()
     message = await interaction_message.fetch()
@@ -63,7 +68,7 @@ async def lock(interaction: discord.Interaction):
     try:
         await handler.lock()
     except Exception as e:
-        await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
+        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
 
 
 @tree.command(name="unlock", description="Unlook the door.")
@@ -76,7 +81,7 @@ async def unlock(interaction: discord.Interaction):
     try:
         await handler.unlock()
     except Exception as e:
-        await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
+        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
 
 @tree.command(name="init", description="Initialize the bot.")
 @app_commands.checks.has_role("ラボメン")
@@ -87,18 +92,7 @@ async def init(interaction: discord.Interaction):
     try:
         await handler.connect()
     except Exception as e:
-        await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
-    
-@tree.command(name="state", description="Get state of the sesame")
-@app_commands.checks.has_role("ラボメン")
-async def init(interaction: discord.Interaction, mode : str):
-    await interaction.response.send_message(f'Attempting to connect to the device...', silent=True)
-    global latest_interaction 
-    latest_interaction = interaction
-    try:
-        await handler.connect()
-    except Exception as e:
-        await appendMessageToInteraction(latest_interaction, f'**Error** \ncaught {type(e)}\n{e}: e')
+        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
 
 @tree.command(name="debug", description="Debug on/off")
 @app_commands.checks.has_role("ラボメン")
