@@ -9,7 +9,7 @@ from pysesameos2.ble import CHBleManager
 from pysesameos2.device import CHDeviceKey
 from pysesameos2.helper import CHProductModel
 
-from pysesameos2.chsesame2 import CHSesame2
+from pysesameos2.chsesame2 import CHSesame2, CHSesame2Status
 from pysesameos2.chsesamebot import CHSesameBot
 from pysesameos2.helper import CHSesame2MechStatus, CHSesameBotMechStatus
 
@@ -31,10 +31,8 @@ class SesameHandler:
     async def connect(self):
         scan_duration = 20
         if not self.device is None:
-            try:
+            if self.device.getDeviceStatus() == CHSesame2Status.NoBleSignal:
                 await self.device.disconnect()
-            except Exception as e:
-                logging.debug(e)
         self.device = await CHBleManager().scan_by_address(
             ble_device_identifier=self.ble_info, scan_duration=scan_duration
         )
