@@ -66,7 +66,7 @@ def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
 @tree.command(name="lock", description="Look the door.")
 @app_commands.checks.has_role("ラボメン")
 async def lock(interaction: discord.Interaction):
-    """ドアを閉めます"""
+    """Lock the door."""
     await interaction.response.send_message(f'Attempting to lock the door', silent=True)
     global latest_interaction 
     latest_interaction = interaction
@@ -79,7 +79,7 @@ async def lock(interaction: discord.Interaction):
 @tree.command(name="unlock", description="Unlook the door.")
 @app_commands.checks.has_role("ラボメン")
 async def unlock(interaction: discord.Interaction):
-    """ドアを閉めます"""
+    """Unlock the door."""
     await interaction.response.send_message(f'Attempting to unlock the door', silent=True)
     global latest_interaction 
     latest_interaction = interaction
