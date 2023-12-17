@@ -73,7 +73,7 @@ async def lock(interaction: discord.Interaction):
     try:
         await handler.lock()
     except Exception as e:
-        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
+        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
 
 
 @tree.command(name="unlock", description="Unlook the door.")
@@ -86,7 +86,7 @@ async def unlock(interaction: discord.Interaction):
     try:
         await handler.unlock()
     except Exception as e:
-        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
+        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
 
 @tree.command(name="init", description="Initialize the bot.")
 @app_commands.checks.has_role("ラボメン")
@@ -97,7 +97,7 @@ async def init(interaction: discord.Interaction):
     try:
         await handler.connect()
     except Exception as e:
-        await send_message_to_channel(f'**Error** \n{type(e)}\n{e}\nStack Trace\n{traceback.format_exc()}',silent=True)
+        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
 
 @tree.command(name="debug", description="Debug on/off")
 @app_commands.checks.has_role("ラボメン")
