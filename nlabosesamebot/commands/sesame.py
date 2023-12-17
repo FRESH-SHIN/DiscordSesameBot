@@ -1,3 +1,4 @@
+import os
 import traceback
 from typing import TYPE_CHECKING, Union
 import asyncio
@@ -7,13 +8,14 @@ from pysesameos2.chsesamebot import CHSesameBot
 from pysesameos2.helper import CHSesame2MechStatus, CHSesameBotMechStatus
 import discord
 from discord import app_commands, Message, Interaction
-from bot import handler, tree, channel
-
+from bot import handler, tree, client
 latest_interaction : Interaction= None
 debug_mode : bool = True
 
 async def send_message_to_channel(msg : str, silent: bool):
-    await channel.send(str, silent=silent)
+    channel = client.get_channel(int(os.getenv('DISCORD_CHANNEL')))
+    print(msg)
+    await channel.send(msg, silent=silent)
 
 async def appendMessageToInteraction(interaction : Interaction, text : str):
     interaction_message = await interaction.original_response()
