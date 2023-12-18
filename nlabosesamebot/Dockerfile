@@ -1,5 +1,7 @@
 FROM alpine:3.16
 
+ENV PIP_ROOT_USER_ACTION=ignore
+
 RUN apk add --update --no-cache python3 && ln -sf python3 /usr/bin/python
 RUN apk add --no-cache python3-dev libffi-dev gcc build-base bluez dbus 
 RUN python3 -m ensurepip
