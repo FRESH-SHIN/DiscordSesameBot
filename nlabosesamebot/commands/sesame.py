@@ -1,111 +1,143 @@
 import os
 import traceback
-from typing import TYPE_CHECKING, Union
 import asyncio
+from typing import TYPE_CHECKING, Union
 from pysesameos2.helper import CHProductModel
 from pysesameos2.chsesame2 import CHSesame2
 from pysesameos2.chsesamebot import CHSesameBot
 from pysesameos2.helper import CHSesame2MechStatus, CHSesameBotMechStatus
 import discord
-from discord import app_commands, Message, Interaction
-from bot import handler, tree, client
-latest_interaction : Interaction= None
-debug_mode : bool = True
+from discord import Interaction
+from discord.ext import commands
+from discord.ui import View
+from bot import handler, client
 
-async def send_message_to_channel(msg : str, silent: bool = False):
-    channel = client.get_channel(int(os.getenv('DISCORD_CHANNEL')))
-    print(msg)
-    await channel.send(msg, silent=silent)
+latest_interaction: Interaction = None
+debug_mode: bool = True
 
-async def appendMessageToInteraction(interaction : Interaction, text : str):
-    interaction_message = await interaction.original_response()
-    message = await interaction_message.fetch()
-    await interaction_message.reply(content=text, silent=True)
+async def send_embed_notification(interaction: Interaction, action: str, color: discord.Color):
+    notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
+    channel = client.get_channel(notification_channel_id)
+    
+    if channel:
+        embed = discord.Embed(
+            title=f"{action} Notification",
+            description=f"{interaction.user.mention} has {action.lower()}ed the room.",
+            color=color
+        )
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
+        await channel.send(embed=embed)
 
-def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
+async def send_status_embed(interaction: Interaction):
+    device = handler.device
     mech_status = device.getMechStatus()
     device_status = device.getDeviceStatus()
-    text = "=" * 10
-    text +=f'\n'+("Device status is updated!")
-    #text =f'\n'+("UUID: {}".format(device.getDeviceUUID()))
-    #text =f'\n'+("Product Model: {}".format(device.productModel))
-    text +=f'\n'+("Device status: {}".format(device_status))
-
-    """
-    Note that even if `getDeviceStatus` succeeds, `getMechStatus` may return `None`.
-
-    The reason is that `DeviceStatus` is a state transition of the device,
-    and it always exists, regardless of the connection status with the device.
-    https://doc.candyhouse.co/ja/flow_charts#sesame-%E7%8A%B6%E6%85%8B%E9%81%B7%E7%A7%BB%E5%9B%B3
-
-    `getMechStatus` can be retrieved after the connection to the device is
-    successfully established.
-    """
+    
+    status_text = f"Device status: {device_status}\n"
     if mech_status is not None:
-        text +=f'\n'+("Battery: {}%".format(mech_status.getBatteryPercentage()))
-        text +=f'\n'+("Battery: {:.2f}V".format(mech_status.getBatteryVoltage()))
-        text +=f'\n'+("isInLockRange: {}".format(mech_status.isInLockRange()))
-        text +=f'\n'+("isInUnlockRange: {}".format(mech_status.isInUnlockRange()))
+        status_text += f"Battery: {mech_status.getBatteryPercentage()}%\n"
+        status_text += f"Battery Voltage: {mech_status.getBatteryVoltage():.2f}V\n"
+        status_text += f"isInLockRange: {mech_status.isInLockRange()}\n"
+        status_text += f"isInUnlockRange: {mech_status.isInUnlockRange()}\n"
+        
         if device.productModel in [CHProductModel.SS2, CHProductModel.SS4]:
             if TYPE_CHECKING:
                 assert isinstance(mech_status, CHSesame2MechStatus)
-            text +=f'\n'+("Position: {}".format(mech_status.getPosition()))
+            status_text += f"Position: {mech_status.getPosition()}\n"
         elif device.productModel == CHProductModel.SesameBot1:
             if TYPE_CHECKING:
                 assert isinstance(mech_status, CHSesameBotMechStatus)
-            text +=f'\n'+("Motor Status: {}".format(mech_status.getMotorStatus()))
-    text +=f'\n'+("=" * 10)
-    if debug_mode:
-        event_loop = asyncio.get_event_loop()
-        asyncio.ensure_future(appendMessageToInteraction(latest_interaction, text), loop=event_loop)
-    else:
-        event_loop = asyncio.get_event_loop()
-        asyncio.ensure_future(send_message_to_channel("Device status: {}".format(device_status), silent=True), loop=event_loop)
-    # await channel.send(text)
+            status_text += f"Motor Status: {mech_status.getMotorStatus()}\n"
 
-@tree.command(name="lock", description="Look the door.")
-@app_commands.checks.has_role("ラボメン")
-async def lock(interaction: discord.Interaction):
-    """Lock the door."""
-    await interaction.response.send_message(f'Attempting to lock the door', silent=True)
-    global latest_interaction 
-    latest_interaction = interaction
-    try:
-        await handler.lock()
-    except Exception as e:
-        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
+    notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
+    channel = client.get_channel(notification_channel_id)
+    if channel:
+        embed = discord.Embed(
+            title="Device Status",
+            description=status_text,
+            color=discord.Color.blue()
+        )
+        await channel.send(embed=embed)
 
+class SesameControlView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
 
-@tree.command(name="unlock", description="Unlook the door.")
-@app_commands.checks.has_role("ラボメン")
-async def unlock(interaction: discord.Interaction):
-    """Unlock the door."""
-    await interaction.response.send_message(f'Attempting to unlock the door', silent=True)
-    global latest_interaction 
-    latest_interaction = interaction
-    try:
-        await handler.unlock()
-    except Exception as e:
-        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        lab_member_role = discord.utils.get(interaction.user.roles, name="ラボメン")
+        if lab_member_role is None:
+            await interaction.response.send_message("You do not have the 'ラボメン' role.", ephemeral=True)
+            return False
+        return True
 
-@tree.command(name="init", description="Initialize the bot.")
-@app_commands.checks.has_role("ラボメン")
-async def init(interaction: discord.Interaction):
-    await interaction.response.send_message(f'Attempting to connect to the device...', silent=True)
-    global latest_interaction 
-    latest_interaction = interaction
-    try:
-        await handler.connect()
-    except Exception as e:
-        await send_message_to_channel(f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',silent=True)
+    @discord.ui.button(label="Unlock", style=discord.ButtonStyle.green, row=0)
+    async def unlock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        global latest_interaction
+        latest_interaction = interaction
+        try:
+            await handler.unlock()
+            await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
+            await send_status_embed(interaction)
+        except Exception as e:
+            notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
+            await send_message_to_channel(
+                f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
+                notification_channel_id,
+                silent=True
+            )
 
-@tree.command(name="debug", description="Debug on/off")
-@app_commands.checks.has_role("ラボメン")
-@app_commands.describe(mode='on or off')
-async def toggle_debug(interaction: discord.Interaction, mode : str):
-    global debug_mode
-    if mode.lower() == "on":
-        debug_mode = True
-    elif mode.lower() == "off":
-        debug_mode = False
-    await interaction.response.send_message(f'Debug mode: {str(debug_mode)}', silent=True)
+    @discord.ui.button(label="Lock", style=discord.ButtonStyle.red, row=0)
+    async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        global latest_interaction
+        latest_interaction = interaction
+        try:
+            await handler.lock()
+            await send_embed_notification(interaction, "🔒 Locked", discord.Color.red())
+            await send_status_embed(interaction)
+        except Exception as e:
+            notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
+            await send_message_to_channel(
+                f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
+                notification_channel_id,
+                silent=True
+            )
+
+    @discord.ui.button(label="Init", style=discord.ButtonStyle.gray, row=1)
+    async def init_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        global latest_interaction
+        latest_interaction = interaction
+        try:
+            await handler.connect()
+            await interaction.followup.send("🔄 Device has been initialized.", ephemeral=True)
+            await send_status_embed(interaction)
+        except Exception as e:
+            notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
+            await send_message_to_channel(
+                f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
+                notification_channel_id,
+                silent=True
+            )
+
+    @discord.ui.button(label="Toggle Debug", style=discord.ButtonStyle.gray, row=1)
+    async def toggle_debug_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global debug_mode
+        debug_mode = not debug_mode
+        status = "ON" if debug_mode else "OFF"
+        await interaction.response.send_message(f"Debug mode: {status}", ephemeral=True)
+        button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
+        button_channel = client.get_channel(button_channel_id)
+        if button_channel:
+            await button_channel.send(f"Debug mode is now {status}.")
+
+@client.event
+async def on_ready():
+    print(f'Logged in as {client.user}!')
+
+    button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
+    button_channel = client.get_channel(button_channel_id)
+    if button_channel:
+        view = SesameControlView()
+        await button_channel.send("Use the buttons below to control the door.", view=view)
