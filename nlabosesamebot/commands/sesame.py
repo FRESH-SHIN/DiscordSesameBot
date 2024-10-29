@@ -59,6 +59,22 @@ async def send_status_embed(interaction: Interaction):
         )
         await channel.send(embed=embed)
 
+async def update_lock_status_message():
+    global info_message
+    button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
+    button_channel = client.get_channel(button_channel_id)
+    if button_channel:
+        status = "Locked" if doorlock_status["is_locked"] else "Unlocked"
+        content = f"**Doorlock status:** {status}"
+
+        if info_message:
+            try:
+                await info_message.edit(content=content)
+            except discord.errors.NotFound:
+                info_message = await button_channel.send(content)
+        else:
+            info_message = await button_channel.send(content)
+
 class SesameControlView(View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -75,10 +91,12 @@ class SesameControlView(View):
         await interaction.response.defer()
         global latest_interaction
         latest_interaction = interaction
+        doorlock_status["is_locked"] = False
         try:
             await handler.unlock()
             await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
             await send_status_embed(interaction)
+            await update_lock_status_message()
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -92,10 +110,12 @@ class SesameControlView(View):
         await interaction.response.defer()
         global latest_interaction
         latest_interaction = interaction
+        doorlock_status["is_locked"] = True
         try:
             await handler.lock()
             await send_embed_notification(interaction, "🔒 Locked", discord.Color.red())
             await send_status_embed(interaction)
+            await update_lock_status_message()
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -134,10 +154,13 @@ class SesameControlView(View):
 
 @client.event
 async def on_ready():
+    global info_message
+
     print(f'Logged in as {client.user}!')
 
     button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
     button_channel = client.get_channel(button_channel_id)
     if button_channel:
         view = SesameControlView()
-        await button_channel.send("Use the buttons below to control the door.", view=view)
+        info_message = await button_channel.send("Use the buttons below to control the door.", view=view)
+        await update_lock_status_message()
