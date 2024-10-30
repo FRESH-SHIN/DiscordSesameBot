@@ -124,7 +124,6 @@ class SesameControlView(View):
         return True
 
     @discord.ui.button(label="Unlock", style=discord.ButtonStyle.green, row=0)
-    @discord.ui.button(label="Unlock", style=discord.ButtonStyle.green, row=0)
     async def unlock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         global latest_interaction
