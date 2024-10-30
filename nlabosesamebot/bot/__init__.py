@@ -39,10 +39,4 @@ handler.initialize(publicKey=os.getenv('PUBLIC_KEY'),
                             state_change_callback=commands.sesame.on_sesame_statechanged)
 
 
-@client.event
-async def on_ready():
-
-    print(f'Logged in as {client.user} (ID: {client.user.id})')
-    print('------')
-
 client.run(os.getenv('DISCORD_TOKEN'))

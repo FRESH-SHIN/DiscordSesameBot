@@ -1,2 +1,3 @@
 pysesameos2
 discord.py
+python-dotenv
