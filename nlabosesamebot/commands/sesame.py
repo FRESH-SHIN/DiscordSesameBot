@@ -6,6 +6,7 @@ from pysesameos2.helper import CHProductModel
 from pysesameos2.chsesame2 import CHSesame2
 from pysesameos2.chsesamebot import CHSesameBot
 from pysesameos2.helper import CHSesame2MechStatus, CHSesameBotMechStatus
+from pysesameos2.const import CHSesame2Status
 import discord
 from discord import Interaction
 from discord.ext import commands
@@ -18,8 +19,7 @@ debug_mode: bool = True
 
 def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
     device_status = device.getDeviceStatus()
-    print(device.getDeviceStatus())
-    doorlock_status["is_locked"] = (device_status == "CHSesame2Status.Locked")
+    doorlock_status["is_locked"] = (device_status == CHSesame2Status.Locked)
 
     status_text = f"Device status: {device_status}\n"
     if debug_mode:
@@ -40,7 +40,7 @@ def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
             color=discord.Color.blue()
         )
         event_loop = asyncio.get_event_loop()
-        asyncio.ensure_future(channel.send(embed=embed), loop=event_loop)
+        asyncio.ensure_future(channel.send(embed=embed, silent=True), loop=event_loop)
     asyncio.ensure_future(update_lock_status_message(), loop=event_loop)
 
 async def send_embed_notification(interaction: Interaction, action: str, color: discord.Color):
@@ -56,7 +56,7 @@ async def send_embed_notification(interaction: Interaction, action: str, color: 
             color=color
         )
         embed.set_author(name=f"{interaction.user.display_name} used {action_text.capitalize()}", icon_url=interaction.user.display_avatar.url)
-        await channel.send(embed=embed)
+        await channel.send(embed=embed, silent=True)
 
 async def send_status_embed(interaction: Interaction):
     device = handler.device
@@ -88,7 +88,7 @@ async def send_status_embed(interaction: Interaction):
             description=status_text,
             color=discord.Color.blue()
         )
-        await channel.send(embed=embed)
+        await channel.send(embed=embed, silent=True)
 
 async def update_lock_status_message():
     global info_message
@@ -104,14 +104,14 @@ async def update_lock_status_message():
             try:
                 await info_message.edit(content=content)
             except discord.errors.NotFound:
-                info_message = await button_channel.send(content)
+                info_message = await button_channel.send(content, silent=True)
         else:
-            info_message = await button_channel.send(content)
+            info_message = await button_channel.send(content, silent=True)
 
-async def send_message_to_channel(message: str, channel_id: int, silent: bool = False):
+async def send_message_to_channel(message: str, channel_id: int):
     channel = client.get_channel(channel_id)
     if channel:
-        await channel.send(content=message, silent=silent)
+        await channel.send(content=message, silent=True)
 
 class SesameControlView(View):
     def __init__(self):
@@ -137,8 +137,7 @@ class SesameControlView(View):
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
                 f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
-                notification_channel_id,
-                silent=True
+                notification_channel_id
             )
     
     @discord.ui.button(label="Lock", style=discord.ButtonStyle.red, row=0)
@@ -154,8 +153,7 @@ class SesameControlView(View):
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
                 f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
-                notification_channel_id,
-                silent=True
+                notification_channel_id
             )
 
     @discord.ui.button(label="Init", style=discord.ButtonStyle.gray, row=1)
@@ -165,14 +163,13 @@ class SesameControlView(View):
         latest_interaction = interaction
         try:
             await handler.connect()
-            await interaction.followup.send("🔄 Device has been initialized.", ephemeral=True)
+            await interaction.followup.send("🔄 Device has been initialized.", ephemeral=True, silent=True)
             await send_status_embed(interaction)
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
                 f'## **Error** \n{type(e)}\n{e}\n### **Stack Trace**\n{traceback.format_exc()}',
-                notification_channel_id,
-                silent=True
+                notification_channel_id
             )
 
     @discord.ui.button(label="Toggle Debug", style=discord.ButtonStyle.gray, row=1)
@@ -193,5 +190,5 @@ async def on_ready():
     button_channel = client.get_channel(button_channel_id)
     if button_channel:
         view = SesameControlView()
-        info_message = await button_channel.send(view=view)
+        info_message = await button_channel.send(view=view, silent=True)
         await update_lock_status_message()
