@@ -130,7 +130,7 @@ class SesameControlView(View):
         latest_interaction = interaction
         try:
             await handler.unlock()
-            await send_embed_notification(interaction, ":unlock: Unlocked", discord.Color.green())
+            await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
