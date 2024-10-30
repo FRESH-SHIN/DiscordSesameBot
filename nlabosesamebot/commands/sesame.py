@@ -18,7 +18,6 @@ debug_mode: bool = True
 
 async def on_sesame_statechanged(device):
     device_status = device.getDeviceStatus()
-
     doorlock_status["is_locked"] = (device_status == "CHSesame2Status.Locked")
 
     status_text = f"Device status: {device_status}\n"
@@ -39,7 +38,6 @@ async def on_sesame_statechanged(device):
             color=discord.Color.blue()
         )
         await channel.send(embed=embed)
-
     await update_lock_status_message()
 
 async def send_embed_notification(interaction: Interaction, action: str, color: discord.Color):
@@ -131,7 +129,8 @@ class SesameControlView(View):
         try:
             await handler.unlock()
             await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
-            await update_lock_status_message() 
+            await update_lock_status_message()
+            await on_sesame_statechanged(handler.device)
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -147,8 +146,9 @@ class SesameControlView(View):
         latest_interaction = interaction
         try:
             await handler.lock()
-            await send_embed_notification(interaction, ":lock: Locked", discord.Color.red())
+            await send_embed_notification(interaction, "🔒 Locked", discord.Color.red())
             await update_lock_status_message() 
+            await on_sesame_statechanged(handler.device)
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
