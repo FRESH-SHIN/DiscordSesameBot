@@ -124,6 +124,7 @@ class SesameControlView(View):
         return True
 
     @discord.ui.button(label="Unlock", style=discord.ButtonStyle.green, row=0)
+    @discord.ui.button(label="Unlock", style=discord.ButtonStyle.green, row=0)
     async def unlock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         global latest_interaction
@@ -131,6 +132,7 @@ class SesameControlView(View):
         try:
             await handler.unlock()
             await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
+            await update_lock_status_message() 
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -147,6 +149,7 @@ class SesameControlView(View):
         try:
             await handler.lock()
             await send_embed_notification(interaction, ":lock: Locked", discord.Color.red())
+            await update_lock_status_message() 
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
