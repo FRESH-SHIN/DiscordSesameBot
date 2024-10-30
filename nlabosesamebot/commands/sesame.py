@@ -18,13 +18,18 @@ debug_mode: bool = True
 
 async def on_sesame_statechanged(device):
     device_status = device.getDeviceStatus()
-    mech_status = device.getMechStatus()
+
+    doorlock_status["is_locked"] = (device_status == "CHSesame2Status.Locked")
+
     status_text = f"Device status: {device_status}\n"
-    if mech_status is not None:
-        status_text += f"Battery: {mech_status.getBatteryPercentage()}%\n"
-        status_text += f"Battery Voltage: {mech_status.getBatteryVoltage():.2f}V\n"
-        status_text += f"isInLockRange: {mech_status.isInLockRange()}\n"
-        status_text += f"isInUnlockRange: {mech_status.isInUnlockRange()}\n"
+    if debug_mode:
+        mech_status = device.getMechStatus()
+        if mech_status is not None:
+            status_text += f"Battery: {mech_status.getBatteryPercentage()}%\n"
+            status_text += f"Battery Voltage: {mech_status.getBatteryVoltage():.2f}V\n"
+            status_text += f"isInLockRange: {mech_status.isInLockRange()}\n"
+            status_text += f"isInUnlockRange: {mech_status.isInUnlockRange()}\n"
+
     notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
     channel = client.get_channel(notification_channel_id)
     if channel:
@@ -34,6 +39,8 @@ async def on_sesame_statechanged(device):
             color=discord.Color.blue()
         )
         await channel.send(embed=embed)
+
+    await update_lock_status_message()
 
 async def send_embed_notification(interaction: Interaction, action: str, color: discord.Color):
     notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
@@ -86,9 +93,11 @@ async def update_lock_status_message():
     global info_message
     button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
     button_channel = client.get_channel(button_channel_id)
+
     if button_channel:
-        status = "🔒 **Locked**" if doorlock_status["is_locked"] else "🔓 **Unlocked**"
-        content = f"**Doorlock status:** {status}\n**Debug mode:** {debug_mode}"
+        lock_status = "🔒 **Locked**" if doorlock_status["is_locked"] else "🔓 **Unlocked**"
+        debug_status = "ON" if debug_mode else "OFF"
+        content = f"**Doorlock status:** {lock_status}\n**Debug mode:** {debug_status}"
 
         if info_message:
             try:
@@ -119,12 +128,9 @@ class SesameControlView(View):
         await interaction.response.defer()
         global latest_interaction
         latest_interaction = interaction
-        doorlock_status["is_locked"] = False
         try:
             await handler.unlock()
-            await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
-            await send_status_embed(interaction)
-            await update_lock_status_message()
+            await send_embed_notification(interaction, ":unlock: Unlocked", discord.Color.green())
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -132,18 +138,15 @@ class SesameControlView(View):
                 notification_channel_id,
                 silent=True
             )
-
+    
     @discord.ui.button(label="Lock", style=discord.ButtonStyle.red, row=0)
     async def lock_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
         global latest_interaction
         latest_interaction = interaction
-        doorlock_status["is_locked"] = True
         try:
             await handler.lock()
-            await send_embed_notification(interaction, "🔒 Locked", discord.Color.red())
-            await send_status_embed(interaction)
-            await update_lock_status_message()
+            await send_embed_notification(interaction, ":lock: Locked", discord.Color.red())
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -187,5 +190,5 @@ async def on_ready():
     button_channel = client.get_channel(button_channel_id)
     if button_channel:
         view = SesameControlView()
-        info_message = await button_channel.send("Use the buttons below to control the door.", view=view)
+        info_message = await button_channel.send(view=view)
         await update_lock_status_message()
