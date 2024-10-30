@@ -12,6 +12,7 @@ from discord.ext import commands
 from discord.ui import View
 from bot import handler, client
 
+doorlock_status = {"is_locked": True}
 latest_interaction: Interaction = None
 debug_mode: bool = True
 
@@ -20,26 +21,30 @@ async def send_embed_notification(interaction: Interaction, action: str, color: 
     channel = client.get_channel(notification_channel_id)
     
     if channel:
+        action_text = "unlocked" if action == "🔓 Unlocked" else "locked"
+        emoji = "🔓" if action == "🔓 Unlocked" else "🔒"
+        
         embed = discord.Embed(
-            title=f"{action} Notification",
-            description=f"{interaction.user.mention} has {action.lower()}ed the room.",
+            description=f"{emoji} **{interaction.user.display_name} has {action_text} the door**",
             color=color
         )
-        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.avatar.url)
+        embed.set_author(name=f"{interaction.user.display_name} used {action_text.capitalize()}", icon_url=interaction.user.avatar.url)
+        
         await channel.send(embed=embed)
 
 async def send_status_embed(interaction: Interaction):
     device = handler.device
     mech_status = device.getMechStatus()
     device_status = device.getDeviceStatus()
-    
+
     status_text = f"Device status: {device_status}\n"
-    if mech_status is not None:
+
+    if debug_mode and mech_status is not None:
         status_text += f"Battery: {mech_status.getBatteryPercentage()}%\n"
         status_text += f"Battery Voltage: {mech_status.getBatteryVoltage():.2f}V\n"
         status_text += f"isInLockRange: {mech_status.isInLockRange()}\n"
         status_text += f"isInUnlockRange: {mech_status.isInUnlockRange()}\n"
-        
+
         if device.productModel in [CHProductModel.SS2, CHProductModel.SS4]:
             if TYPE_CHECKING:
                 assert isinstance(mech_status, CHSesame2MechStatus)
@@ -64,7 +69,7 @@ async def update_lock_status_message():
     button_channel_id = int(os.getenv('DISCORD_BUTTON_CHANNEL'))
     button_channel = client.get_channel(button_channel_id)
     if button_channel:
-        status = "Locked" if doorlock_status["is_locked"] else "Unlocked"
+        status = "🔒 **Locked**" if doorlock_status["is_locked"] else "🔓 **Unlocked**"
         content = f"**Doorlock status:** {status}"
 
         if info_message:
@@ -74,6 +79,11 @@ async def update_lock_status_message():
                 info_message = await button_channel.send(content)
         else:
             info_message = await button_channel.send(content)
+
+async def send_message_to_channel(message: str, channel_id: int, silent: bool = False):
+    channel = client.get_channel(channel_id)
+    if channel:
+        await channel.send(content=message, silent=silent)
 
 class SesameControlView(View):
     def __init__(self):
