@@ -16,8 +16,9 @@ doorlock_status = {"is_locked": True}
 latest_interaction: Interaction = None
 debug_mode: bool = True
 
-async def on_sesame_statechanged(device):
+def on_sesame_statechanged(device: Union[CHSesame2, CHSesameBot]) -> None:
     device_status = device.getDeviceStatus()
+    print(device.getDeviceStatus())
     doorlock_status["is_locked"] = (device_status == "CHSesame2Status.Locked")
 
     status_text = f"Device status: {device_status}\n"
@@ -31,14 +32,16 @@ async def on_sesame_statechanged(device):
 
     notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
     channel = client.get_channel(notification_channel_id)
+    
     if channel:
         embed = discord.Embed(
             title="Device Status Update",
             description=status_text,
             color=discord.Color.blue()
         )
-        await channel.send(embed=embed)
-    await update_lock_status_message()
+        event_loop = asyncio.get_event_loop()
+        asyncio.ensure_future(channel.send(embed=embed), loop=event_loop)
+    asyncio.ensure_future(update_lock_status_message(), loop=event_loop)
 
 async def send_embed_notification(interaction: Interaction, action: str, color: discord.Color):
     notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
@@ -130,7 +133,6 @@ class SesameControlView(View):
             await handler.unlock()
             await send_embed_notification(interaction, "🔓 Unlocked", discord.Color.green())
             await update_lock_status_message()
-            await on_sesame_statechanged(handler.device)
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
@@ -148,7 +150,6 @@ class SesameControlView(View):
             await handler.lock()
             await send_embed_notification(interaction, "🔒 Locked", discord.Color.red())
             await update_lock_status_message() 
-            await on_sesame_statechanged(handler.device)
         except Exception as e:
             notification_channel_id = int(os.getenv('DISCORD_CHANNEL'))
             await send_message_to_channel(
