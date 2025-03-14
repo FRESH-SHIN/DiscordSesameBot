@@ -55,7 +55,10 @@ async def send_embed_notification(interaction: Interaction, action: str, color: 
             description=f"{emoji} **{interaction.user.display_name} has {action_text} the door**",
             color=color
         )
-        embed.set_author(name=f"{interaction.user.display_name} used {action_text.capitalize()}", icon_url=interaction.user.display_avatar.url)
+        embed.set_author(
+            name=action,
+            icon_url=interaction.user.display_avatar.url
+        )
         await channel.send(embed=embed, silent=True)
 
 async def send_status_embed(interaction: Interaction):
