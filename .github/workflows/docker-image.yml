@@ -23,7 +23,7 @@ jobs:
         echo DISCORD_GUILD=${{ secrets.DISCORD_GUILD }} >> .env
         echo DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} >> .env
     - name: docker compose down
-      run: docker-compose down
+      run: docker compose down
       continue-on-error: true
     - name: Stop and remove the container
       run: docker rm -f discordsesamebot-app
