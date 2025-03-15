@@ -48,15 +48,21 @@ async def send_embed_notification(interaction: Interaction, action: str, color: 
     channel = client.get_channel(notification_channel_id)
     
     if channel:
-        action_text = "unlocked" if action == "🔓 Unlocked" else "locked"
-        emoji = "🔓" if action == "🔓 Unlocked" else "🔒"
+        if "Unlocked" in action:
+            author_text = "Unlocked"
+            action_text = "unlocked"
+            emoji = "🔓"
+        else:
+            author_text = "Locked"
+            action_text = "locked"
+            emoji = "🔒"
         
         embed = discord.Embed(
             description=f"{emoji} **{interaction.user.display_name} has {action_text} the door**",
             color=color
         )
         embed.set_author(
-            name=action,
+            name=author_text,
             icon_url=interaction.user.display_avatar.url
         )
         await channel.send(embed=embed, silent=True)
